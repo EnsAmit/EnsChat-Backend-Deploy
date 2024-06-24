@@ -615,6 +615,10 @@ const getAllGroup = async (req, res, next) => {
 const getUserWithChatId = async (req, res, next) => {
     const { userId } = req.body;
 
+    if (!ObjectId.isValid(userId)) {
+        return next(400, "Invalid userId format");
+    }
+
     if (!userId) {
         return next(400, "user not exist")
     }
