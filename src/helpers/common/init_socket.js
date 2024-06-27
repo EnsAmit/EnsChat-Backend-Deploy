@@ -5,6 +5,7 @@ import cors from 'cors'
 import Message from '../../models/message/message.model.js'
 import { createError } from './backend.functions.js'
 import Chat from '../../models/chat/chat.model.js'
+import User from '../../models/auth/user.model.js'
 
 
 const ensModuleBackendApp = express();
@@ -36,8 +37,12 @@ io.on('connect', (socket) => {
 
   socket.on('message send', async (chatData) => {
     try {
-      // console.log("chatData",chatData)
+      console.log("chatData",chatData)
+      if(chatData.chat){
+        chatData.freshChat = false;
+      }
       if(chatData.chat == null){
+        chatData.freshChat = true;
         const chatMembers = [
           { userId: chatData.sender },
           { userId: chatData.receiver }
@@ -50,9 +55,16 @@ io.on('connect', (socket) => {
         const savedChat = await newChat.save();
         chatData.chat =  savedChat._id;
       }
+     
       // console.log("after daving chatData",chatData)
       const newMessage = new Message(chatData);
       const savedMessage = await newMessage.save();
+
+      const userExist = await User.find({_id:savedMessage.sender},{firstName:1,lastName:1})
+      if(!userExist){
+        throw new Error("user Not exists in - initSocket")
+      }
+      console.log(userExist)
 
     //   const updatedChat = await Chat.findOneAndUpdate(
     //     { _id: chatData.chat },
@@ -75,7 +87,7 @@ io.on('connect', (socket) => {
     const updatedChat = await Chat.findById(chatId);
 
     // Logging updated chat for debugging
-    console.log("Updated Chat: ", updatedChat);
+    // console.log("Updated Chat: ", updatedChat);
 
       
       
@@ -103,19 +115,21 @@ io.on('connect', (socket) => {
         sender: savedMessage.sender,
         messageType: savedMessage.messageType,
         fileName: savedMessage.fileName,
-        chat: savedMessage.chat,
+        chat: savedMessage.chat.toString(),
         content: savedMessage.content,
         // unseenMsge : updatedChat.
-        messageDate : formatDate(savedMessage.createdAt )
+        senderName : `${userExist[0].firstName} ${userExist[0].lastName}`,
+        isFreshChat : chatData.freshChat,
+        messageDate : formatDate(savedMessage.createdAt)
       };
    
       
       const room = chatData.chat;
       // console.log('room',room)
       
-      // console.log('selectedMessage',selectedMessage)
+      console.log('selectedMessage',selectedMessage)
 
-    chatData.members.forEach((id)=>{
+     chatData.members.forEach((id)=>{
       socket.in(id).emit('message received', selectedMessage);
 
     })
@@ -168,6 +182,11 @@ io.on('connect', (socket) => {
     io.to(to).emit("peer:nego:final", { from: socket.id, ans });
     console.log("peer:nego:done")
   });
+
+  socket.on("user: disconnected", ({ chatId, socket_id}) => {
+    io.to(socket_id).emit("disconnect: accepected", { chatId, socket_id});
+    console.log("user: disconnected---------------------", chatId, socket_id)
+  })
 
   // --------------- video call ---------------------
 })

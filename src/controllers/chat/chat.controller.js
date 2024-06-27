@@ -109,140 +109,7 @@ const searchChat = async (req, res, next) => {
     }
 
     else {
-        //         try {
-        //             // Fetch all single chats for the provided userId
-        //             let allChat = await Chat.find({
-        //                 isGroupChat: false,
-        //                 'members.userId': userId
-        //             }).populate({
-        //                 path: 'members.userId',
-        //                 select: "_id firstName lastName picture"
-        //             });
-
-        //             if (!allChat) {
-        //                 return next(createError(400, "data not found"));
-        //             }
-
-        //             // Filter out the provided userId from members
-        //             allChat = allChat.map(chat => {
-        //                 chat.members = chat.members.filter(member => member.userId._id.toString() !== userId);
-        //                 return chat;
-        //             });
-
-        //             // Fetch all group chats for the provided userId
-        //             let groups = await Chat.find({
-        //                 isGroupChat: true,
-        //                 'members.userId': userId
-        //             }).populate({
-        //                 path: 'members.userId',
-        //                 select: "_id firstName lastName picture"
-        //             });
-
-        //             if (!groups) {
-        //                 return next(createError(400, "data not found"));
-        //             }
-
-        //             // Combine chat IDs from single and group chats
-        //             const chatIds = [...allChat.map(chat => chat._id), ...groups.map(group => group._id)];
-        //             const latestMessages = await Message.aggregate([
-        //                 { $match: { chat: { $in: chatIds } } },
-        //                 { $sort: { createdAt: -1 } },
-        //                 {
-        //                     $group: {
-        //                         _id: "$chat",
-        //                         lastMessage: { $first: "$$ROOT" }
-        //                     }
-        //                 },
-        //                 {
-        //                     $project: {
-        //                         chat: "$_id",
-        //                         lastMessage: {
-        //                             content: "$lastMessage.content",
-        //                             fileName: "$lastMessage.fileName",
-        //                             createdAt: "$lastMessage.createdAt"
-        //                         }
-        //                     }
-        //                 }
-        //             ]);
-
-        //             // Map latest messages to chats
-        //             const latestMessagesMap = latestMessages.reduce((acc, message) => {
-        //                 acc[message._id.toString()] = message.lastMessage;
-        //                 return acc;
-        //             }, {});
-
-        //             // Create group objects array
-        //             const group = groups.map(groupChat => {
-        //                 const member = groupChat.members.find(member => member.userId._id.toString() === userId);
-        //                 return {
-        //                     isGroupChat: groupChat.isGroupChat,
-        //                     chatId: groupChat._id,
-        //                     member: groupChat.members,
-        //                     fullName: groupChat.chatName,
-        //                     unseenMessage: member ? member.unseenMessage : 0, // Include unseen message count
-        //                     picture: groupChat.picture,
-        //                     lastMessage: latestMessagesMap[groupChat._id.toString()]
-        //                 };
-        //             });
-
-        //             // Create single chat objects array
-        //             allChat.forEach(chat => {
-        //                 console.log(`Chat ID: ${chat._id}`);
-        //                 chat.members.forEach(member => {
-        //                     console.log(`Member User ID: ${member.userId}`);
-        //                     console.log(`Member unseenMessage: ${member.unseenMessage}`);
-        //                     if (member.userId.toString() === userId) {
-        //                         console.log(`Found logged-in user in chat: ${chat._id}`);
-        //                         console.log(`Unseen messages for logged-in user: ${member.unseenMessage}`);
-        //                     }
-        //                 });
-        //             });
-        //             // console.log("allChat",allChat)
-        //             const singleChat = allChat.flatMap(chat =>
-        //                 chat.members.map(member => ({
-        //                     isGroupChat: chat.isGroupChat,
-        //                     chatId: chat._id,
-        //                     userId: member.userId._id,
-        //                     unseenMessage: member.unseenMessage, // Include unseen message count
-        //                     fullName: `${member.userId.firstName} ${member.userId.lastName}`,
-        //                     picture: member.userId.picture,
-        //                     lastMessage: latestMessagesMap[chat._id.toString()]
-        //                 }))
-        //             );
-
-        //             // Combine and sort the result array
-        //             const result = [
-        //                 ...singleChat,
-        //                 ...group
-        //             ];
-
-        //             // result.sort((a, b) => {
-        //             //     return new Date(b.lastMessage.createdAt) - new Date(a.lastMessage.createdAt);
-        //             // });
-        //             result.sort((a, b) => {
-        //     const dateA = a.lastMessage ? new Date(a.lastMessage.createdAt) : null;
-        //     const dateB = b.lastMessage ? new Date(b.lastMessage.createdAt) : null;
-
-        //     if (dateA && dateB) {
-        //         return dateB - dateA;
-        //     } else if (dateA) {
-        //         return -1;
-        //     } else if (dateB) {
-        //         return 1;
-        //     } else {
-        //         return 0;
-        //     }
-        // });
-
-        //             // console.log("---result --->",result)
-
-        //             return res.status(200).json({
-        //                 data: result
-        //             });
-
-        //         } catch (error) {
-        //             next(error);
-        //         }
+        
         try {
             // Fetch all single chats for the provided userId
             let allChat = await Chat.find({
@@ -263,6 +130,8 @@ const searchChat = async (req, res, next) => {
                 chat.members = chat.members.filter(member => member.userId._id.toString() !== userId);
                 return chat;
             });
+            console.log('allChat',allChat)
+
 
             // Fetch all group chats for the provided userId
             let groups = await Chat.find({
@@ -326,7 +195,7 @@ const searchChat = async (req, res, next) => {
                     isGroupChat: chat.isGroupChat,
                     chatId: chat._id,
                     userId: member.userId._id,
-                    unseenMessage: member.unseenMessage, // Include unseen message count
+                    unseenMessage: member.userId===member, // Include unseen message count
                     fullName: `${member.userId.firstName} ${member.userId.lastName}`,
                     picture: member.userId.picture,
                     lastMessage: latestMessagesMap[chat._id.toString()]
@@ -339,9 +208,7 @@ const searchChat = async (req, res, next) => {
                 ...group
             ];
 
-            // result.sort((a, b) => {
-            //     return new Date(b.lastMessage.createdAt) - new Date(a.lastMessage.createdAt);
-            // });
+           
             result.sort((a, b) => {
                 const dateA = a.lastMessage ? new Date(a.lastMessage.createdAt) : null;
                 const dateB = b.lastMessage ? new Date(b.lastMessage.createdAt) : null;
@@ -358,7 +225,7 @@ const searchChat = async (req, res, next) => {
             });
 
 
-            console.log("---result --->", result)
+            // console.log("---result --->", result)
 
             return res.status(200).json({
                 data: result
@@ -412,7 +279,7 @@ const searchUser = async (req, res, next) => {
                 { userName: { $regex: `^${searchValue}`, $options: 'i' } }
             ]
         }, { firstName: 1, lastName: 1, picture: 1 });
-        console.log(userExist, "userExist")
+        // console.log(userExist, "userExist")
 
         if (!userExist || userExist.length === 0) {
             return next(createError(400, "User not exist"));
@@ -564,7 +431,7 @@ const getGroupInfo = async (req, res, next) => {
 }
 const addGroup = async (req, res, next) => {
     try {
-        console.log("req.body", req.body)
+        // console.log("req.body", req.body)
         const userId = req.user.id;
         const { groupData, addImage } = req.body;
         const membersData = []
@@ -615,12 +482,12 @@ const getAllGroup = async (req, res, next) => {
 const getUserWithChatId = async (req, res, next) => {
     const { userId } = req.body;
 
-    if (!ObjectId.isValid(userId)) {
-        return next(400, "Invalid userId format");
-    }
-
     if (!userId) {
         return next(400, "user not exist")
+    }
+   
+    if (!ObjectId.isValid(userId)) {
+        return next(400, "Invalid userId format");
     }
     const id = new ObjectId(userId)
     try {
